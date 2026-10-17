@@ -16,6 +16,13 @@ class Link(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     expires_at = db.Column(db.DateTime, nullable=True)
 
+    # An explicit constructor documents the fields (and keeps editors/type checkers happy,
+    # since they can't see the keyword arguments SQLAlchemy generates automatically).
+    def __init__(self, code, original_url, expires_at=None):
+        self.code = code
+        self.original_url = original_url
+        self.expires_at = expires_at
+
     def is_expired(self):
         return self.expires_at is not None and self.expires_at <= utcnow()
 

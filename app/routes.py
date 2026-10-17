@@ -2,6 +2,7 @@ import io
 
 import qrcode
 from flask import Blueprint, abort, current_app, jsonify, redirect, request, send_file, url_for
+from qrcode.image.pil import PilImage
 
 from . import db
 from .models import Link
@@ -32,6 +33,21 @@ def get_active_link_or_error(code):
         # 410 Gone: it existed, but isn't coming back.
         abort(410, description=f"Link '{code}' has expired")
     return link
+
+
+@bp.get("/")
+def index():
+    # A small "help" response so visiting the root URL in a browser isn't a 404.
+    return jsonify(
+        name="URL Shortener API",
+        endpoints={
+            "POST /shorten": "Create a short link. JSON: {url, alias?, expires_in_days? | expires_at?}",
+            "GET /<code>": "Redirect to the original URL",
+            "GET /<code>/stats": "Link details and click count",
+            "GET /<code>/qr": "QR code PNG",
+            "DELETE /<code>": "Delete a link",
+        },
+    ), 200
 
 
 @bp.post("/shorten")
@@ -97,7 +113,7 @@ def stats(code):
 @bp.get("/<code>/qr")
 def qr(code):
     get_active_link_or_error(code)
-    img = qrcode.make(short_url_for(code))
+    img = qrcode.make(short_url_for(code), image_factory=PilImage)
     buf = io.BytesIO()  # build the PNG in memory, no temp files
     img.save(buf, format="PNG")
     buf.seek(0)
